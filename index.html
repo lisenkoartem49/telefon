@@ -26,14 +26,14 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             border: 1px solid #313244;
         }
-        h2 { font-size: 1.2rem; margin-top: 0; margin-bottom: 12px; color: #cba6f7; }
+        h2 { font-size: 1.1rem; margin-top: 0; margin-bottom: 10px; color: #cba6f7; }
         input { 
             width: 100%; 
-            padding: 14px; 
-            margin-bottom: 12px; 
-            border-radius: 10px; 
+            padding: 12px; 
+            margin-bottom: 10px; 
+            border-radius: 8px; 
             border: 1px solid #45475a; 
-            font-size: 15px; 
+            font-size: 14px; 
             box-sizing: border-box; 
             background: #313244; 
             color: #cdd6f4;
@@ -42,11 +42,11 @@
         input:focus { border-color: #89b4fa; }
         button { 
             width: 100%; 
-            padding: 14px; 
+            padding: 12px; 
             margin-bottom: 10px; 
-            border-radius: 10px; 
+            border-radius: 8px; 
             border: none; 
-            font-size: 15px; 
+            font-size: 14px; 
             font-weight: bold; 
             cursor: pointer; 
             background: #89b4fa; 
@@ -54,16 +54,22 @@
             transition: opacity 0.2s;
         }
         button:active { opacity: 0.8; }
-        .danger { background: #f38ba8; color: #11111b; }
+        .save-btn { background: #fab387; color: #11111b; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .grid button { margin-bottom: 0; background: #a6e3a1; }
-        hr { border: 0; height: 1px; background: #45475a; margin: 20px 0; }
+        hr { border: 0; height: 1px; background: #45475a; margin: 18px 0; }
         .status { text-align: center; font-size: 13px; color: #a6adc8; margin-top: 8px; min-height: 18px; }
     </style>
 </head>
 <body>
 
 <div class="card">
+    <h2>⚙️ Настройка Webhook</h2>
+    <input type="text" id="webhookUrl" placeholder="Вставьте ссылку https://trigger.macrodroid.com/...">
+    <button class="save-btn" onclick="saveWebhook()">Сохранить Webhook</button>
+
+    <hr>
+
     <h2>🗣️ Озвучить текст на телефоне</h2>
     <input type="text" id="textInput" placeholder="Введите текст...">
     <button onclick="sendText()">Отправить сообщение</button>
@@ -80,8 +86,16 @@
 </div>
 
 <script>
-    // Твоя точная ссылка с триггером speek
-    const BASE_URL = "https://trigger.macrodroid.com/8e130c4a-0041-4dc3-9027-3367938c41b0/speek"; 
+    // Загружаем сохраненный вебхук при открытии страницы
+    window.onload = function() {
+        const savedUrl = localStorage.getItem('macrodroid_webhook');
+        if (savedUrl) {
+            document.getElementById('webhookUrl').value = savedUrl;
+        } else {
+            // Запасная ссылка по умолчанию (твоя текущая)
+            document.getElementById('webhookUrl').value = "https://trigger.macrodroid.com/8e130c4a-0041-4dc3-9027-3367938c41b0/speek";
+        }
+    };
 
     function showStatus(msg) {
         const status = document.getElementById('statusText');
@@ -89,21 +103,48 @@
         setTimeout(() => { status.innerText = ''; }, 3000);
     }
 
+    function saveWebhook() {
+        const url = document.getElementById('webhookUrl').value.trim();
+        if (!url) {
+            showStatus('⚠️ Введите корректный URL!');
+            return;
+        }
+        localStorage.setItem('macrodroid_webhook', url);
+        showStatus('💾 Ссылка сохранена!');
+    }
+
+    function getWebhookUrl() {
+        return document.getElementById('webhookUrl').value.trim();
+    }
+
     function sendText() {
+        const url = getWebhookUrl();
         const input = document.getElementById('textInput');
         const text = input.value.trim();
-        if(!text) {
+        
+        if (!url) {
+            showStatus('⚠️ Сначала укажите Webhook URL!');
+            return;
+        }
+        if (!text) {
             showStatus('⚠️ Введите текст!');
             return;
         }
         
-        fetch(`${BASE_URL}?text=${encodeURIComponent(text)}`, { mode: 'no-cors' });
+        const separator = url.includes('?') ? '&' : '?';
+        fetch(`${url}${separator}text=${encodeURIComponent(text)}`, { mode: 'no-cors' });
         showStatus('✅ Текст отправлен!');
         input.value = '';
     }
 
     function sendQuickText(text) {
-        fetch(`${BASE_URL}?text=${encodeURIComponent(text)}`, { mode: 'no-cors' });
+        const url = getWebhookUrl();
+        if (!url) {
+            showStatus('⚠️ Сначала укажите Webhook URL!');
+            return;
+        }
+        const separator = url.includes('?') ? '&' : '?';
+        fetch(`${url}${separator}text=${encodeURIComponent(text)}`, { mode: 'no-cors' });
         showStatus(`✅ Отправлено: "${text}"`);
     }
 </script>
